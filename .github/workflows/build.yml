@@ -2,51 +2,44 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: Install Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          git \
-          ffmpeg \
-          libsdl2-dev \
-          libsdl2-image-dev \
-          libsdl2-mixer-dev \
-          libsdl2-ttf-dev \
-          pkg-config \
-          autoconf \
-          automake \
-          libtool \
-          libffi-dev \
-          libssl-dev \
-          unzip \
-          zip \
-          openjdk-17-jdk \
-          cython
-        python -m pip install --upgrade pip
-        pip install buildozer kivy
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential libssl-dev libffi-dev python3-dev \
+            git zip unzip openjdk-17-jdk ccache libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 cmake
+          python -m pip install --upgrade pip setuptools
+          pip install buildozer cython
 
-    - name: Build APK
-      run: |
-        buildozer -v android debug
+      - name: Build APK with Buildozer
+        run: |
+          buildozer android debug
+        env:
+          ACCEPT_SDK_LICENSE: 'yes'
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: package
-        path: bin/*.apk
-        
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mayera-APK
+          path: bin/*.apk
+          
