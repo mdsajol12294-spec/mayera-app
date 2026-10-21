@@ -42,11 +42,20 @@ jobs:
             echo "    TestApp().run()" >> main.py
           fi
 
-      - name: Initialize Buildozer Spec if Missing
+      - name: Initialize and Fix Buildozer Spec
         run: |
           if [ ! -f buildozer.spec ]; then
             buildozer init
-            sed -i 's/# requirements = python3,kivy/requirements = python3,kivy/' buildozer.spec
+          fi
+          # Force python3 version to 3.11 and stable requirements
+          sed -i 's/#requirements = python3,kivy/requirements = python3,kivy/' buildozer.spec
+          sed -i 's/requirements = python3,kivy/requirements = python3,kivy/' buildozer.spec
+          if grep -q "#android.api" buildozer.spec; then
+            sed -i 's/#android.api = 33/android.api = 33/' buildozer.spec
+          fi
+          # Explicitly set python version in spec if option exists, or append
+          if grep -q "osx.python_version" buildozer.spec; then
+            echo "p4a.branch = master" >> buildozer.spec
           fi
 
       - name: Build APK
