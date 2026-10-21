@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,51 +23,17 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential libssl-dev libffi-dev python3-dev \
-            git zip unzip openjdk-17-jdk ccache libtool pkg-config zlib1g-dev \
-            libncurses5-dev libncursesw5-dev libtinfo5 cmake
+          sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev git zip unzip openjdk-17-jdk ccache libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev cmake
           python -m pip install --upgrade pip setuptools
           pip install buildozer cython
 
-      - name: Ensure Dummy Code Exists if Missing
+      - name: Build with Buildozer
         run: |
-          if [ ! -f main.py ]; then
-            echo "import kivy" > main.py
-            echo "from kivy.app import App" >> main.py
-            echo "from kivy.uix.label import Label" >> main.py
-            echo "class TestApp(App):" >> main.py
-            echo "    def build(self):" >> main.py
-            echo "        return Label(text='Mayera AI Test')" >> main.py
-            echo "if __name__ == '__main__':" >> main.py
-            echo "    TestApp().run()" >> main.py
-          fi
-
-      - name: Initialize and Fix Buildozer Spec
-        run: |
-          if [ ! -f buildozer.spec ]; then
-            buildozer init
-          fi
-          # Force python3 version to 3.11 and stable requirements
-          sed -i 's/#requirements = python3,kivy/requirements = python3,kivy/' buildozer.spec
-          sed -i 's/requirements = python3,kivy/requirements = python3,kivy/' buildozer.spec
-          if grep -q "#android.api" buildozer.spec; then
-            sed -i 's/#android.api = 33/android.api = 33/' buildozer.spec
-          fi
-          # Explicitly set python version in spec if option exists, or append
-          if grep -q "osx.python_version" buildozer.spec; then
-            echo "p4a.branch = master" >> buildozer.spec
-          fi
-
-      - name: Build APK
-        run: |
-          yes | buildozer android debug
-        env:
-          ACCEPT_SDK_LICENSE: 'yes'
+          buildozer android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mayera-APK
+          name: mayera-debug-apk
           path: bin/*.apk
           
